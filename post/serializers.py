@@ -15,7 +15,7 @@ from django.contrib.auth import get_user_model
 class PostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostImage
-        fields =['image']
+        fields =['id','image',]
 class EmptySerialiserz(serializers.Serializer):
     pass
 class SimpleUserSerializer(serializers.ModelSerializer):
@@ -48,13 +48,14 @@ class CommentSerializer(serializers.ModelSerializer):
     
 class PostSerializer(serializers.ModelSerializer):
     poster = SimpleUserSerializer(source = 'user',read_only = True)
-    likes_count = serializers.IntegerField(source='likes.count', read_only=True)
+    likes_count = serializers.IntegerField(source='likes.count', read_only=True,help_text = 'return the number of likes of the post')
     comments = CommentSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
     caption = serializers.CharField(source = 'text')
+    images = PostImageSerializer(many = True,read_only = True)
     class Meta:
         model = Post
-        fields = ['id', 'poster', 'caption', 'image', 'video_url', 'likes_count', 'is_liked', 'comments', 'created_at','updated_at']
+        fields = ['id', 'poster', 'caption','images', 'likes_count', 'is_liked', 'comments', 'created_at','updated_at']
 
     def get_is_liked(self, obj):
         user = self.context['request'].user

@@ -2,17 +2,24 @@ from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Post, Like, Comment
-from .serializers import PostSerializer, CommentSerializer,EmptySerialiserz
-from .permissions import IsPosterOrReadonly
-from django.db.models import Count, Prefetch, Exists, OuterRef
-
+from .models import Post, Like, Comment,PostImage
+from .serializers import PostSerializer, CommentSerializer,EmptySerialiserz,PostImageSerializer
+from .permissions import IsPosterOrReadonly,IsPostOwner
+from .paginations import DefaultPagination
+from drf_yasg.utils import swagger_auto_schema
 # Create your views here.
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all().order_by('-created_at')    
+    """"
+    Api endpoint for managing post in Phibook 
+    - Anyone can See Posts
+    - Only the Authenticated user can Post
+    - Only the poster can edit their post
+    """
+    queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
+    pagination_class = DefaultPagination
     def get_permissions(self):
         if self.action == 'toggle_like':
             permission_classes = [permissions.IsAuthenticated]
@@ -47,8 +54,34 @@ class PostViewSet(viewsets.ModelViewSet):
                 serializer.save(user=request.user)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @swagger_auto_schema(
+            operation_summary= 'Retreive a list of post'
+    )
+    def list(self, request, *args, **kwargs):
+        """Retreive all the Post"""
+        return super().list(request, *args, **kwargs)
+    @swagger_auto_schema(
+            operation_summary= 'Create a post by Logged in User',
+            request_body= PostSerializer,
+            responses={
+                201 : PostSerializer,
+                400 : "Bad Request"
+            }
+    )
+    def create(self, request, *args, **kwargs):
+        """Only the Authenticated user can Post"""
+        return super().create(request, *args, **kwargs)
 
-class Post
+class PostImageViewset(viewsets.ModelViewSet):
+    serializer_class = PostImageSerializer
+    permission_classes = [IsPostOwner,permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return PostImage.objects.filter(post_id= self.kwargs.get('post_pk'))
+    def perform_create(self, serializer):
+        serializer.save(post_id= self.kwargs.get('post_pk'))
+    
+
 class CommentViewset(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsPosterOrReadonly]
