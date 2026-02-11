@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import uuid
+from cloudinary.models import CloudinaryField
 # Create your models here.
 class Post(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -13,7 +14,7 @@ class Post(models.Model):
 
 class  PostImage(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE,related_name='images')
-    image = models.ImageField(upload_to = 'post/images/')
+    image = CloudinaryField('image')
 
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

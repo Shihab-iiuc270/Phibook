@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 #         return obj.user == self.context['request'].user
 
 class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField()
     class Meta:
         model = PostImage
         fields =['id','image',]
