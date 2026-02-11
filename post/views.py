@@ -13,6 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 class PostViewSet(viewsets.ModelViewSet):
     """"
     Api endpoint for managing post in Phibook 
+    -Activation email to active a user with uid and token
     - Anyone can See Posts
     - Only the Authenticated user can Post
     - Only the poster can edit their post
