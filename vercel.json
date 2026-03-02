@@ -3,14 +3,27 @@
     {
       "src": "phibook/wsgi.py",
       "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb", "runtime": "python3.11.3" }
+      "config": { 
+        "maxLambdaSize": "15mb", 
+        "runtime": "python3.9" 
+      }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
       "dest": "phibook/wsgi.py"
+    },
+    {
+      "src": "/(.*\\..*)|^((?!api).)*$",
+      "dest": "/dist/$1"
     }
   ]
 }
-
