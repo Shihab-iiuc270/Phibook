@@ -16,7 +16,7 @@ SECRET_KEY = 'django-insecure--!8b_a48x3l906suwm^50wat(hi^a)_z@_*y@z!tf9ufbo6r#t
 DEBUG = False
 
 
-ALLOWED_HOSTS = [".vercel.app","127.0.0.1",'https://phibook-1cwh.vercel.app']
+ALLOWED_HOSTS = [".vercel.app","127.0.0.1",]
 
 
 # Application definition
@@ -31,9 +31,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'drf_yasg',
     'rest_framework',
-    "corsheaders",
     "djoser",
-    "debug_toolbar",
+    "corsheaders",
+    # "debug_toolbar",
     'api',
     'post',
     'users'
@@ -42,16 +42,16 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
 
 ]
 
@@ -80,6 +80,7 @@ WSGI_APPLICATION = 'phibook.wsgi.app'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://phibook-1cwh.vercel.app",
 ]
 
 # Database
