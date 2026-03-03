@@ -4,13 +4,14 @@ from rest_framework import exceptions, serializers
 class UserCreateSerializer(Base):
     phone_number = serializers.CharField(write_only=True)
     location = serializers.CharField(write_only=True)
+    avatar = serializers.ImageField()
     class Meta(Base.Meta):
-        fields = ['id','email','password','first_name','last_name','location','phone_number']
+        fields = ['id','email','password','first_name','last_name','location','phone_number','avatar']
 
 class UserSerializer(BaseUser):
     
     class Meta(BaseUser.Meta):
-            fields = ['id','email','first_name','last_name','location','phone_number']
+            fields = ['id','email','first_name','last_name','location','phone_number','avatar']
             ref_name = 'CustomUser'
 
 

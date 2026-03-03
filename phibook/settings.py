@@ -1,7 +1,10 @@
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
-import cloudinary
+try:
+    import cloudinary
+except ImportError:
+    cloudinary = None
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'users.User'
@@ -33,13 +36,15 @@ INSTALLED_APPS = [
     'rest_framework',
     "djoser",
     "corsheaders",
-    # "debug_toolbar",
     'api',
     'post',
     'users'
 
 
 ]
+
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -51,9 +56,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # "debug_toolbar.middleware.DebugToolbarMiddleware",
-
 ]
+
+if DEBUG:
+    MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
 
 ROOT_URLCONF = 'phibook.urls'
 INTERNAL_IPS = [
@@ -76,7 +82,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'phibook.wsgi.app'
+WSGI_APPLICATION = 'phibook.wsgi.application'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -96,11 +102,11 @@ CORS_ALLOWED_ORIGINS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('dbname'),
-        'USER': config('user'),
-        'PASSWORD': config('password'),
-        'HOST': config('host'),
-        'PORT': config('port')
+        'NAME': config('dbname', default=''),
+        'USER': config('user', default=''),
+        'PASSWORD': config('password', default=''),
+        'HOST': config('host', default=''),
+        'PORT': config('port', default=''),
     }
 }
 
@@ -134,14 +140,18 @@ USE_I18N = True
 
 USE_TZ = True
 
-cloudinary.config( 
-    cloud_name = config("cloud_name"), 
-    api_key = config("api_key"), 
-    api_secret = config("api_secret"), # Click 'View API Keys' above to copy your API secret
-    secure=True
-)
+cloud_name = config("cloud_name", default="")
+api_key = config("api_key", default="")
+api_secret = config("api_secret", default="")
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+if cloudinary and cloud_name and api_key and api_secret:
+    cloudinary.config(
+        cloud_name=cloud_name,
+        api_key=api_key,
+        api_secret=api_secret,
+        secure=True,
+    )
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
