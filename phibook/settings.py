@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     "corsheaders",
     'api',
     'post',
-    'users'
+    'users',
+    "cloudinary",
+    "cloudinary_storage",
 
 
 ]

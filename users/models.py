@@ -8,7 +8,12 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    avatar = models.ImageField(upload_to='media/',blank=True,null=True,default='media/post/images/default-avatar-profile-icon-of-social-media-user-vector.jpg')
+    avatar = models.ImageField(
+    upload_to="avatars/",
+    blank=True,
+    null=True,
+    default="avatars/default.png",  # optional default
+)
 
     # is_verified = models.BooleanField(default=False)
 
