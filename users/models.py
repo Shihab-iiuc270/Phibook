@@ -12,7 +12,7 @@ class User(AbstractUser):
     upload_to="avatars/",
     blank=True,
     null=True,
-    default="avatars/default.png",  # optional default
+    default="avatars/default-avatar-profile-icon-of-social-media-user-vector.jpg",
 )
 
     # is_verified = models.BooleanField(default=False)
