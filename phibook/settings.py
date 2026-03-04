@@ -195,12 +195,14 @@ SIMPLE_JWT = {
 # settings.py
 DJOSER = {
     "PASSWORD_RESET_CONFIRM_URL": "password/reset/confirm/{uid}/{token}",
-    "ACTIVATION_URL": "activate/{uid}/{token}/",
+    "ACTIVATION_URL": "activate/{uid}/{token}",
+    "EMAIL_FRONTEND_DOMAIN": config("FRONTEND_DOMAIN", default="localhost:5173"),
+    "EMAIL_FRONTEND_PROTOCOL": config("FRONTEND_PROTOCOL", default="http"),
     "SEND_ACTIVATION_EMAIL": True,
     "SERIALIZERS": {
         "user_create": "users.serializers.UserCreateSerializer",
-        "user": "users.serializers.UserSerializer",          # add this
-        "current_user": "users.serializers.UserSerializer",  # keep this
+        "user": "users.serializers.UserSerializer",
+        "current_user": "users.serializers.UserSerializer",
     },
 }
 
