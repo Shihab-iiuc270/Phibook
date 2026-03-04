@@ -27,17 +27,23 @@ class UserCreateSerializer(Base):
         return super().create(validated_data)
 
 
+# class UserSerializer(BaseUser):
+#     avatar = serializers.ImageField(required=False, allow_null=True)
+
+#     class Meta(BaseUser.Meta):
+#             fields = ['id','email','first_name','last_name','location','phone_number','avatar']
+#             ref_name = 'CustomUser'
+
+#     def update(self, instance, validated_data):
+#         # If client explicitly sends null, reset avatar to default.
+#         if "avatar" in validated_data and validated_data["avatar"] is None:
+#             validated_data["avatar"] = DEFAULT_AVATAR_PATH
+#         return super().update(instance, validated_data)
+
+
 class UserSerializer(BaseUser):
-    avatar = serializers.ImageField(required=False, allow_null=True)
+    avatar = serializers.ImageField(required=False, allow_null=True, read_only=False)
 
     class Meta(BaseUser.Meta):
-            fields = ['id','email','first_name','last_name','location','phone_number','avatar']
-            ref_name = 'CustomUser'
-
-    def update(self, instance, validated_data):
-        # If client explicitly sends null, reset avatar to default.
-        if "avatar" in validated_data and validated_data["avatar"] is None:
-            validated_data["avatar"] = DEFAULT_AVATAR_PATH
-        return super().update(instance, validated_data)
-
-
+        fields = ["id", "email", "first_name", "last_name", "location", "phone_number", "avatar"]
+        ref_name = "CustomUser"
