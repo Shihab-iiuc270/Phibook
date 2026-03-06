@@ -1,10 +1,12 @@
+from sslcommerz_lib import SSLCOMMERZ
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from .models import Post, Like, Comment,PostImage
-from .serializers import PostSerializer, CommentSerializer,EmptySerialiserz,PostImageSerializer
-from .permissions import IsPosterOrReadonly,IsPostOwner
+from uuid import uuid4
+from .models import Post, Like, Comment, PostImage
+from .serializers import PostSerializer, CommentSerializer, EmptySerialiserz, PostImageSerializer
+from .permissions import IsPosterOrReadonly, IsPostOwner
 from .paginations import DefaultPagination
 from drf_yasg.utils import swagger_auto_schema
 # Create your views here.
@@ -98,3 +100,66 @@ class CommentViewset(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         return {'post_id': self.kwargs.get('post_pk')}
+
+
+@api_view(["POST"])
+def initiate_payment(request):
+    user = request.user
+    amount = request.data.get('amount')
+    if amount in (None, ""):
+        return Response({"error": "amount is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return Response({"error": "amount must be a positive number"}, status=status.HTTP_400_BAD_REQUEST)
+
+    settings = { 'store_id': 'phibo69ab254643702', 'store_pass': 'phibo69ab254643702@ssl', 'issandbox': True } 
+
+    sslcz = SSLCOMMERZ(settings)
+    post_body = {}
+    post_body['total_amount'] = amount
+    post_body['currency'] = "BDT"
+    post_body['tran_id'] = uuid4().hex[:20]
+    post_body['success_url'] = request.build_absolute_uri("/api/v1/payment/success/")
+    post_body['fail_url'] = request.build_absolute_uri("/api/v1/payment/fail/")
+    post_body['cancel_url'] = request.build_absolute_uri("/api/v1/payment/cancel/")
+    post_body['emi_option'] = 0
+    post_body['cus_name'] = f"{user.first_name} {user.last_name}"
+    post_body['cus_email'] = user.email
+    post_body['cus_phone'] = user.phone_number
+    post_body['cus_add1'] = user.location
+    post_body['cus_city'] = "Dhaka"
+    post_body['cus_country'] = "Bangladesh"
+    post_body['shipping_method'] = "NO"
+    post_body['multi_card_name'] = ""
+    post_body['num_of_item'] = 1
+    post_body['product_name'] = "Test"
+    post_body['product_category'] = "Test Category"
+    post_body['product_profile'] = "general"
+
+
+    try:
+        response = sslcz.createSession(post_body)  # API response dict
+    except Exception as exc:
+        return Response(
+            {"error": "payment gateway request failed", "details": str(exc)},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    gateway_status = str(response.get("status", "")).upper() if isinstance(response, dict) else ""
+    gateway_url = response.get("GatewayPageURL") if isinstance(response, dict) else None
+
+    if gateway_status == "SUCCESS" and gateway_url:
+        return Response({"payment_url": gateway_url}, status=status.HTTP_200_OK)
+
+    return Response(
+        {"error": "payment initiation failed", "gateway_response": response},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+# Backward-compatible alias if any caller still imports the old name.
+# initiate_Payment = initiate_payment

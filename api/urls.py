@@ -1,5 +1,5 @@
-from django.urls import path,include
-from post.views import PostViewSet,CommentViewset,PostImageViewset
+from django.urls import path, include
+from post.views import PostViewSet, CommentViewset, PostImageViewset, initiate_payment
 from rest_framework_nested import routers
 from users.views import UserSearchView
 # from rest_framework.routers import DefaultRouter
@@ -25,4 +25,5 @@ urlpatterns = [
     path('users/search/', UserSearchView.as_view(), name='user-search'),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
+    path('payment/initiate/', initiate_payment, name='initiate-payment')
 ]
