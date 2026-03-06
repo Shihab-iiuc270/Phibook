@@ -1,4 +1,3 @@
-from sslcommerz_lib import SSLCOMMERZ
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view
@@ -104,6 +103,14 @@ class CommentViewset(viewsets.ModelViewSet):
 
 @api_view(["POST"])
 def initiate_payment(request):
+    try:
+        from sslcommerz_lib import SSLCOMMERZ
+    except Exception as exc:
+        return Response(
+            {"error": "SSLCommerz library is not available", "details": str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
     user = request.user
     amount = request.data.get('amount')
     if amount in (None, ""):
@@ -116,7 +123,11 @@ def initiate_payment(request):
     except (TypeError, ValueError):
         return Response({"error": "amount must be a positive number"}, status=status.HTTP_400_BAD_REQUEST)
 
-    settings = { 'store_id': 'phibo69ab254643702', 'store_pass': 'phibo69ab254643702@ssl', 'issandbox': True } 
+    settings = {
+        'store_id': "phibo69ab254643702",
+        'store_pass': "phibo69ab254643702@ssl",
+        'issandbox': True,
+    }
 
     sslcz = SSLCOMMERZ(settings)
     post_body = {}
@@ -127,10 +138,16 @@ def initiate_payment(request):
     post_body['fail_url'] = request.build_absolute_uri("/api/v1/payment/fail/")
     post_body['cancel_url'] = request.build_absolute_uri("/api/v1/payment/cancel/")
     post_body['emi_option'] = 0
-    post_body['cus_name'] = f"{user.first_name} {user.last_name}"
-    post_body['cus_email'] = user.email
-    post_body['cus_phone'] = user.phone_number
-    post_body['cus_add1'] = user.location
+    first_name = getattr(user, "first_name", "") or "Customer"
+    last_name = getattr(user, "last_name", "") or ""
+    email = getattr(user, "email", "") or request.data.get("email", "customer@example.com")
+    phone = getattr(user, "phone_number", "") or request.data.get("phone", "01700000000")
+    address = getattr(user, "location", "") or request.data.get("address", "Dhaka")
+
+    post_body['cus_name'] = f"{first_name} {last_name}".strip()
+    post_body['cus_email'] = email
+    post_body['cus_phone'] = phone
+    post_body['cus_add1'] = address
     post_body['cus_city'] = "Dhaka"
     post_body['cus_country'] = "Bangladesh"
     post_body['shipping_method'] = "NO"
