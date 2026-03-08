@@ -89,6 +89,7 @@ WSGI_APPLICATION = 'phibook.wsgi.application'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "https://phibook-1cwh.vercel.app",
+    "https://phibook-frontend-git-main-mohammad-shihab-uddins-projects.vercel.app"
 ]
 
 # Database
