@@ -174,6 +174,10 @@ STORAGES = {
     },
 }
 
+# DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@yourdomain.com")
+# SERVER_EMAIL = DEFAULT_FROM_EMAIL
+# EMAIL_TIMEOUT = 20
+
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='')
@@ -199,7 +203,7 @@ DJOSER = {
     "ACTIVATION_URL": "activate/{uid}/{token}",
     "EMAIL_FRONTEND_DOMAIN": config("FRONTEND_DOMAIN", default="localhost:5173"),
     "EMAIL_FRONTEND_PROTOCOL": config("FRONTEND_PROTOCOL", default="http"),
-    "SEND_ACTIVATION_EMAIL": False,
+    "SEND_ACTIVATION_EMAIL": True,
     "SERIALIZERS": {
         "user_create": "users.serializers.UserCreateSerializer",
         "user": "users.serializers.UserSerializer",
