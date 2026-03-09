@@ -199,7 +199,7 @@ DJOSER = {
     "ACTIVATION_URL": "activate/{uid}/{token}",
     "EMAIL_FRONTEND_DOMAIN": config("FRONTEND_DOMAIN", default="localhost:5173"),
     "EMAIL_FRONTEND_PROTOCOL": config("FRONTEND_PROTOCOL", default="http"),
-    "SEND_ACTIVATION_EMAIL": True,
+    "SEND_ACTIVATION_EMAIL": False,
     "SERIALIZERS": {
         "user_create": "users.serializers.UserCreateSerializer",
         "user": "users.serializers.UserSerializer",
