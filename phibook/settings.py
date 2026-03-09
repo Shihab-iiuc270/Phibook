@@ -222,4 +222,6 @@ SWAGGER_SETTINGS = {
       }
    }
 }
-
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@yourdomain.com")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+EMAIL_TIMEOUT = 20
