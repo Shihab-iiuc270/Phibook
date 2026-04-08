@@ -1,4 +1,8 @@
 from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.conf import settings as django_settings
+from urllib.parse import urlencode
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
@@ -134,9 +138,12 @@ def initiate_payment(request):
     post_body['total_amount'] = amount
     post_body['currency'] = "BDT"
     post_body['tran_id'] = uuid4().hex[:20]
-    post_body['success_url'] = "http://localhost:5173/payment/success"
-    post_body['fail_url'] = request.build_absolute_uri("http://localhost:5173/payment/fail/")
-    post_body['cancel_url'] = request.build_absolute_uri("http://localhost:5173/payment/cancel/")
+    # NOTE: SSLCommerz posts transaction data to success/fail/cancel URLs.
+    # A React SPA route can't reliably handle POST, so these should be backend endpoints
+    # that then redirect (GET) to the frontend pages.
+    post_body['success_url'] = request.build_absolute_uri(reverse("success-payment"))
+    post_body['fail_url'] = request.build_absolute_uri(reverse("fail-payment"))
+    post_body['cancel_url'] = request.build_absolute_uri(reverse("cancel-payment"))
     post_body['emi_option'] = 0
     first_name = getattr(user, "first_name", "") or "Customer"
     last_name = getattr(user, "last_name", "") or ""
@@ -180,3 +187,44 @@ def initiate_payment(request):
 
 # Backward-compatible alias if any caller still imports the old name.
 # initiate_Payment = initiate_payment
+
+
+def _frontend_base_url() -> str:
+    djoser_cfg = getattr(django_settings, "DJOSER", {}) or {}
+    protocol = djoser_cfg.get("EMAIL_FRONTEND_PROTOCOL", "http")
+    domain = djoser_cfg.get("EMAIL_FRONTEND_DOMAIN", "localhost:5173")
+    return f"{protocol}://{domain}".rstrip("/")
+
+
+@api_view(["POST"])
+def sslcommerz_success(request):
+    frontend_url = f"{_frontend_base_url()}/payment/success"
+    params = {
+        "tran_id": request.data.get("tran_id"),
+        "val_id": request.data.get("val_id"),
+        "status": request.data.get("status") or "SUCCESS",
+    }
+    qs = urlencode({k: v for k, v in params.items() if v})
+    return HttpResponseRedirect(f"{frontend_url}?{qs}" if qs else frontend_url)
+
+
+@api_view(["POST"])
+def sslcommerz_fail(request):
+    frontend_url = f"{_frontend_base_url()}/payment/fail"
+    params = {
+        "tran_id": request.data.get("tran_id"),
+        "status": request.data.get("status") or "FAILED",
+    }
+    qs = urlencode({k: v for k, v in params.items() if v})
+    return HttpResponseRedirect(f"{frontend_url}?{qs}" if qs else frontend_url)
+
+
+@api_view(["POST"])
+def sslcommerz_cancel(request):
+    frontend_url = f"{_frontend_base_url()}/payment/cancel"
+    params = {
+        "tran_id": request.data.get("tran_id"),
+        "status": request.data.get("status") or "CANCELLED",
+    }
+    qs = urlencode({k: v for k, v in params.items() if v})
+    return HttpResponseRedirect(f"{frontend_url}?{qs}" if qs else frontend_url)

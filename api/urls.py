@@ -1,5 +1,13 @@
 from django.urls import path, include
-from post.views import PostViewSet, CommentViewset, PostImageViewset, initiate_payment
+from post.views import (
+    PostViewSet,
+    CommentViewset,
+    PostImageViewset,
+    initiate_payment,
+    sslcommerz_success,
+    sslcommerz_fail,
+    sslcommerz_cancel,
+)
 from rest_framework_nested import routers
 from users.views import UserSearchView
 # from rest_framework.routers import DefaultRouter
@@ -26,7 +34,7 @@ urlpatterns = [
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
     path('payment/initiate/', initiate_payment, name='initiate-payment'),
-    path('payment/success/', initiate_payment, name='success-payment'),
-    path('payment/fail/', initiate_payment, name='fail-payment'),
-    path('payment/cancel/', initiate_payment, name='cancel-payment')
+    path('payment/success/', sslcommerz_success, name='success-payment'),
+    path('payment/fail/', sslcommerz_fail, name='fail-payment'),
+    path('payment/cancel/', sslcommerz_cancel, name='cancel-payment')
 ]
