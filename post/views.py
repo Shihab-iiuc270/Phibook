@@ -13,7 +13,7 @@ from .permissions import IsPosterOrReadonly, IsPostOwner
 from .paginations import DefaultPagination
 from drf_yasg.utils import swagger_auto_schema
 # Create your views here.
-
+from django.conf import settings as main_settings
 
 class PostViewSet(viewsets.ModelViewSet):
     """"
@@ -141,7 +141,7 @@ def initiate_payment(request):
     # NOTE: SSLCommerz posts transaction data to success/fail/cancel URLs.
     # A React SPA route can't reliably handle POST, so these should be backend endpoints
     # that then redirect (GET) to the frontend pages.
-    post_body['success_url'] = request.build_absolute_uri(reverse("success-payment"))
+    post_body['success_url'] = f"{main_settings.BACKEND_URL}/api/v1/payment/success/"
     post_body['fail_url'] = request.build_absolute_uri(reverse("fail-payment"))
     post_body['cancel_url'] = request.build_absolute_uri(reverse("cancel-payment"))
     post_body['emi_option'] = 0
@@ -198,14 +198,9 @@ def _frontend_base_url() -> str:
 
 @api_view(["POST"])
 def sslcommerz_success(request):
-    frontend_url = f"{_frontend_base_url()}/payment/success"
-    params = {
-        "tran_id": request.data.get("tran_id"),
-        "val_id": request.data.get("val_id"),
-        "status": request.data.get("status") or "SUCCESS",
-    }
-    qs = urlencode({k: v for k, v in params.items() if v})
-    return HttpResponseRedirect(f"{frontend_url}?{qs}" if qs else frontend_url)
+    user_id = request.user
+    print("user name",user_id.name)
+    return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/success")
 
 
 @api_view(["POST"])
