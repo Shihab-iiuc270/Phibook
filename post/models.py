@@ -31,3 +31,31 @@ class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class PaymentTransaction(models.Model):
+    STATUS_INITIATED = "INITIATED"
+    STATUS_SUCCESS = "SUCCESS"
+    STATUS_FAILED = "FAILED"
+    STATUS_CANCELLED = "CANCELLED"
+
+    STATUS_CHOICES = [
+        (STATUS_INITIATED, "Initiated"),
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_transactions",
+    )
+    tran_id = models.CharField(max_length=40, unique=True, db_index=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_INITIATED, db_index=True
+    )
+    gateway_payload = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

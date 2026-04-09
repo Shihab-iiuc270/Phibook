@@ -4,10 +4,16 @@ from django.urls import reverse
 from django.conf import settings as django_settings
 from urllib.parse import urlencode
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import (
+    action,
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.response import Response
 from uuid import uuid4
-from .models import Post, Like, Comment, PostImage
+from decimal import Decimal
+from .models import Post, Like, Comment, PostImage, PaymentTransaction
 from .serializers import PostSerializer, CommentSerializer, EmptySerialiserz, PostImageSerializer
 from .permissions import IsPosterOrReadonly, IsPostOwner
 from .paginations import DefaultPagination
@@ -127,6 +133,8 @@ def initiate_payment(request):
     except (TypeError, ValueError):
         return Response({"error": "amount must be a positive number"}, status=status.HTTP_400_BAD_REQUEST)
 
+    amount_decimal = Decimal(str(amount))
+
     settings = {
         'store_id': "phibo69ab254643702",
         'store_pass': "phibo69ab254643702@ssl",
@@ -137,7 +145,8 @@ def initiate_payment(request):
     post_body = {}
     post_body['total_amount'] = amount
     post_body['currency'] = "BDT"
-    post_body['tran_id'] = uuid4().hex[:20]
+    tran_id = uuid4().hex[:20]
+    post_body['tran_id'] = tran_id
     # NOTE: SSLCommerz posts transaction data to success/fail/cancel URLs.
     # A React SPA route can't reliably handle POST, so these should be backend endpoints
     # that then redirect (GET) to the frontend pages.
@@ -166,8 +175,25 @@ def initiate_payment(request):
 
 
     try:
+        PaymentTransaction.objects.create(
+            user=user,
+            tran_id=tran_id,
+            amount=amount_decimal,
+            status=PaymentTransaction.STATUS_INITIATED,
+        )
+    except Exception as exc:
+        return Response(
+            {"error": "failed to create payment record", "details": str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    try:
         response = sslcz.createSession(post_body)  # API response dict
     except Exception as exc:
+        PaymentTransaction.objects.filter(tran_id=tran_id).update(
+            status=PaymentTransaction.STATUS_FAILED,
+            gateway_payload={"error": str(exc)},
+        )
         return Response(
             {"error": "payment gateway request failed", "details": str(exc)},
             status=status.HTTP_502_BAD_GATEWAY,
@@ -179,6 +205,10 @@ def initiate_payment(request):
     if gateway_status == "SUCCESS" and gateway_url:
         return Response({"payment_url": gateway_url}, status=status.HTTP_200_OK)
 
+    PaymentTransaction.objects.filter(tran_id=tran_id).update(
+        status=PaymentTransaction.STATUS_FAILED,
+        gateway_payload=_flatten_request_data(response) if response is not None else None,
+    )
     return Response(
         {"error": "payment initiation failed", "gateway_response": response},
         status=status.HTTP_400_BAD_REQUEST,
@@ -196,16 +226,68 @@ def _frontend_base_url() -> str:
     return f"{protocol}://{domain}".rstrip("/")
 
 
+def _flatten_request_data(data):
+    if hasattr(data, "dict"):
+        try:
+            return data.dict()
+        except Exception:
+            return {"raw": str(data)}
+    if isinstance(data, dict):
+        return data
+    return {"raw": str(data)}
+
+
+def _get_tran_id(request):
+    return (
+        request.data.get("tran_id")
+        or request.data.get("tranid")
+        or request.query_params.get("tran_id")
+        or request.query_params.get("tranid")
+    )
+
+
 @api_view(["POST"])
+@authentication_classes([])
+@permission_classes([permissions.AllowAny])
 def sslcommerz_success(request):
-    # user_id = request.user
-    # print("user name",user_id.name)
-    
-    return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/success")
+    tran_id = _get_tran_id(request)
+    gateway_status = (request.data.get("status") or "").upper()
+
+    if not tran_id:
+        return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/fail")
+
+    payment = (
+        PaymentTransaction.objects.select_related("user").filter(tran_id=tran_id).first()
+    )
+    if not payment:
+        return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/fail?{urlencode({'tran_id': tran_id})}")
+
+    payment.gateway_payload = _flatten_request_data(request.data)
+
+    # SSLCommerz typically uses VALID/VALIDATED to indicate a successful payment.
+    if gateway_status in ("VALID", "VALIDATED"):
+        payment.status = PaymentTransaction.STATUS_SUCCESS
+        payment.save(update_fields=["status", "gateway_payload", "updated_at"])
+        user = payment.user
+        if getattr(user, "is_verified", False) is False:
+            user.is_verified = True
+            user.save(update_fields=["is_verified"])
+        return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/success")
+
+    payment.status = PaymentTransaction.STATUS_FAILED
+    payment.save(update_fields=["status", "gateway_payload", "updated_at"])
+    return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/fail?{urlencode({'tran_id': tran_id})}")
 
 
 @api_view(["POST"])
+@authentication_classes([])
+@permission_classes([permissions.AllowAny])
 def sslcommerz_fail(request):
+    tran_id = _get_tran_id(request)
+    if tran_id:
+        PaymentTransaction.objects.filter(tran_id=tran_id).update(
+            status=PaymentTransaction.STATUS_FAILED, gateway_payload=_flatten_request_data(request.data)
+        )
     frontend_url = f"{_frontend_base_url()}/payment/fail"
     params = {
         "tran_id": request.data.get("tran_id"),
@@ -216,7 +298,14 @@ def sslcommerz_fail(request):
 
 
 @api_view(["POST"])
+@authentication_classes([])
+@permission_classes([permissions.AllowAny])
 def sslcommerz_cancel(request):
+    tran_id = _get_tran_id(request)
+    if tran_id:
+        PaymentTransaction.objects.filter(tran_id=tran_id).update(
+            status=PaymentTransaction.STATUS_CANCELLED, gateway_payload=_flatten_request_data(request.data)
+        )
     frontend_url = f"{_frontend_base_url()}/payment/cancel"
     params = {
         "tran_id": request.data.get("tran_id"),
