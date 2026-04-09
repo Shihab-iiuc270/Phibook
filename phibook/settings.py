@@ -19,7 +19,11 @@ SECRET_KEY = 'django-insecure--!8b_a48x3l906suwm^50wat(hi^a)_z@_*y@z!tf9ufbo6r#t
 DEBUG = False
 
 
-ALLOWED_HOSTS = [".vercel.app","127.0.0.1",]
+def _split_csv(value: str):
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+ALLOWED_HOSTS = _split_csv(config("ALLOWED_HOSTS", default=".vercel.app,127.0.0.1,localhost"))
 
 
 # Application definition
@@ -86,11 +90,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'phibook.wsgi.application'
 
-CORS_ALLOWED_ORIGINS = [
+_default_cors_allowed_origins = [
     "http://localhost:5173",
     "https://phibook-1cwh.vercel.app",
-    "https://phibook-frontend-git-main-mohammad-shihab-uddins-projects.vercel.app"
+    "https://phibook-frontend-git-main-mohammad-shihab-uddins-projects.vercel.app",
+    "https://phibook-frontend-two.vercel.app",
 ]
+CORS_ALLOWED_ORIGINS = sorted(
+    set(_default_cors_allowed_origins + _split_csv(config("CORS_ALLOWED_ORIGINS", default="")))
+)
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
