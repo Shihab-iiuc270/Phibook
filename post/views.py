@@ -200,6 +200,7 @@ def _frontend_base_url() -> str:
 def sslcommerz_success(request):
     # user_id = request.user
     # print("user name",user_id.name)
+    
     return HttpResponseRedirect(f"{main_settings.FRONTEND_URL}/payment/success")
 
 
