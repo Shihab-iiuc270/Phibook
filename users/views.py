@@ -8,6 +8,7 @@ from .models import User
 from .serializers import UserSerializer
 
 
+
 class UserSearchView(APIView):
     permission_classes = [AllowAny]
 
